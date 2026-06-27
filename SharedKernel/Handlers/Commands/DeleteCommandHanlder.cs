@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Commands;
 
-public class DeleteCommandHanlder<TDbContext, TEntity,TKey> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
+public abstract class DeleteCommandHanlder<TDbContext, TEntity,TKey> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
 {
     public DeleteCommandHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)

@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Commands;
 
-public class UpdateCommandHanlder<TDbContext, TEntity, TKey> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
+public abstract class UpdateCommandHanlder<TDbContext, TEntity, TKey> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
 {
     public UpdateCommandHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)
@@ -53,9 +53,9 @@ public class UpdateCommandHanlder<TDbContext, TEntity, TKey> : BaseCommandHanlde
         }
     }
 
-    protected virtual void MapToEntity<TDto>(TDto data, TEntity entity) where TDto : class
+    protected virtual void MapToEntity<TDto>(TDto dto, TEntity entity) where TDto : class
     {
-        _mapper.Map(data, entity);
+        _mapper.Map(dto, entity);
     }
     protected virtual Task ValidateAsync<TDto>(TDto dto, TEntity entity, CancellationToken cancellationToken) where TDto : class
     {

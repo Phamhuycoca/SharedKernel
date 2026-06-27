@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Queries;
 
-public class GetAllQueryHanlder<TDbContext, TEntity> : BaseQueryHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class
+public abstract class GetAllQueryHanlder<TDbContext, TEntity> : BaseQueryHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class
 {
     public GetAllQueryHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)

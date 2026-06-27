@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Queries;
 
-public class GetByIdQueryHanlder<TDbContext, TEntity,TKey> : BaseQueryHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
+public abstract class GetByIdQueryHanlder<TDbContext, TEntity,TKey> : BaseQueryHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
 {
     public GetByIdQueryHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)

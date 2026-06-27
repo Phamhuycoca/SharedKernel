@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Commands;
 
-public class CreateCommandHanlder<TDbContext, TEntity> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class
+public abstract class CreateCommandHanlder<TDbContext, TEntity> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class
 {
     public CreateCommandHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)
@@ -48,9 +48,9 @@ public class CreateCommandHanlder<TDbContext, TEntity> : BaseCommandHanlder<TDbC
         }
     }
 
-    protected virtual TEntity MapToEntity<TDto>(TDto data) where TDto : class
+    protected virtual TEntity MapToEntity<TDto>(TDto dto) where TDto : class
     {
-        return _mapper.Map<TDto, TEntity>(data);
+        return _mapper.Map<TDto, TEntity>(dto);
     }
     protected virtual Task ValidateAsync<TDto>(TDto dto, TEntity entity, CancellationToken cancellationToken) where TDto : class
     {
