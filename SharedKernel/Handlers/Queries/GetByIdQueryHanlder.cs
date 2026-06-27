@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Queries;
 
-public abstract class GetByIdQueryHanlder<TDbContext, TEntity,TKey> : BaseQueryHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
+public abstract class GetByIdQueryHanlder<TDbContext, TEntity, TKey> : BaseQueryHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
 {
     public GetByIdQueryHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)
@@ -24,24 +24,19 @@ public abstract class GetByIdQueryHanlder<TDbContext, TEntity,TKey> : BaseQueryH
 
     public async Task<ResponseDto<TDto>> Handle<TDto>(GetByIdQueryCommand<TKey> request, CancellationToken cancellationToken) where TDto : class
     {
-        try
-        {
-            var entity = await _context.Set<TEntity>()
-            .FindAsync(new object[] { request.id }, cancellationToken);
 
-            if (entity is null)
-                throw new AppException(HttpStatusCode.NotFound, ResponseMessage.NotFound);
+        var entity = await _context.Set<TEntity>()
+        .FindAsync(new object[] { request.id }, cancellationToken);
 
-            return new ResponseDto<TDto>
-            {
-                data = _mapper.Map<TDto>(entity),
-                success = true,
-                message = ResponseMessage.GetSuccess
-            };
-        }
-        catch (Exception ex)
+        if (entity is null)
+            throw new AppException(HttpStatusCode.NotFound, ResponseMessage.NotFound);
+
+        return new ResponseDto<TDto>
         {
-            throw new AppException(HttpStatusCode.BadRequest, ex.Message);
-        }
+            data = _mapper.Map<TDto>(entity),
+            success = true,
+            message = ResponseMessage.GetSuccess
+        };
+
     }
 }

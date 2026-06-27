@@ -1,30 +1,29 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using SharedKernel.Behaviors;
 using SharedKernel.Common.Constants;
 using SharedKernel.Common.Wrapper.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace SharedKernel.Common.Middleware;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
+    private readonly IWebHostEnvironment _env;  // FIX: inject thay vì đọc env var mỗi request
 
     public GlobalExceptionHandler(
-        ILogger<GlobalExceptionHandler> logger)
+        ILogger<GlobalExceptionHandler> logger,
+        IWebHostEnvironment env)
     {
         _logger = logger;
+        _env = env;
     }
 
     public async ValueTask<bool> TryHandleAsync(
@@ -34,28 +33,22 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         var traceId = httpContext.TraceIdentifier;
 
-        // log
         LogException(exception, traceId, httpContext);
 
-        // map exception
-        var (statusCode, detail, errors)
-            = MapException(exception);
+        var (statusCode, message, errors) = MapException(exception);
 
         httpContext.Response.StatusCode = (int)statusCode;
 
         var response = new ApiErrorResponse
         {
             status_code = (int)statusCode,
-            message = detail,
+            message = message,
             instance = httpContext.Request.Path,
             errors = errors,
             trace_id = traceId,
         };
-
-
-        await httpContext.Response.WriteAsJsonAsync(
-            response,
-            cancellationToken);
+        httpContext.Response.ContentType = "application/json";
+        await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
 
         return true;
     }
@@ -64,33 +57,32 @@ public class GlobalExceptionHandler : IExceptionHandler
     // MAP EXCEPTION
     // =========================================
 
-    private static (
-        HttpStatusCode statusCode,
-        string? detail,
-        object? errors)
+    private (HttpStatusCode statusCode, string message, object? errors)
         MapException(Exception ex)
     {
         return ex switch
         {
             DbUpdateException dbEx
-            when dbEx.InnerException is SqlException sqlEx
-            && (sqlEx.Number == 2601 || sqlEx.Number == 2627)
-            => (
-                HttpStatusCode.BadRequest,
-                "Validation failed",
-                GetDuplicateErrors(sqlEx.Message)
-            ),
+                when dbEx.InnerException is SqlException sqlEx
+                && (sqlEx.Number == 2601 || sqlEx.Number == 2627)
+                => (
+                    HttpStatusCode.Conflict,  
+                    ResponseMessage.AlreadyExists,
+                    GetDuplicateErrors(sqlEx.Message)
+                ),
 
             RequestValidationException fluentEx => (
-                HttpStatusCode.BadRequest,
-                fluentEx.Message,
-                fluentEx.errors
+                HttpStatusCode.UnprocessableEntity,
+               "Validation failed",
+                fluentEx.Errors
             ),
 
             AppException appEx => (
                 appEx.status_code,
                 appEx.Message,
-                null
+                appEx.detail != null
+                    ? new { detail = appEx.detail }
+                    : null
             ),
 
             UnauthorizedAccessException => (
@@ -99,18 +91,28 @@ public class GlobalExceptionHandler : IExceptionHandler
                 null
             ),
 
-            ArgumentException => (
+            KeyNotFoundException => ( 
+                HttpStatusCode.NotFound,
+                ResponseMessage.NotFound,
+                null
+            ),
+
+            ArgumentException argEx => (
                 HttpStatusCode.BadRequest,
-                ex.Message,
+                _env.IsDevelopment() ? argEx.Message : "Invalid request.",
+                null
+            ),
+
+            OperationCanceledException => ( 
+                HttpStatusCode.BadRequest,
+                "Request was cancelled.",
                 null
             ),
 
             _ => (
                 HttpStatusCode.InternalServerError,
-                IsDevelopment()
-                    ? ex.Message
-                    : ResponseMessage.InternalError,
-                null
+                _env.IsDevelopment() ? ex.Message : ResponseMessage.InternalError,
+                _env.IsDevelopment() ? (object?)new { stack_trace = ex.StackTrace } : null
             )
         };
     }
@@ -119,17 +121,22 @@ public class GlobalExceptionHandler : IExceptionHandler
     // LOG
     // =========================================
 
-    private void LogException(
-        Exception exception,
-        string traceId,
-        HttpContext context)
+    private void LogException(Exception exception, string traceId, HttpContext context)
     {
         if (exception is AppException appEx)
         {
             _logger.LogWarning(
-                "Business exception | TraceId: {TraceId} | Message: {Message}",
+                "Business exception | TraceId: {TraceId} | StatusCode: {StatusCode} | Message: {Message}",
                 traceId,
+                (int)appEx.status_code,
                 appEx.Message);
+        }
+        else if (exception is RequestValidationException)
+        {
+            _logger.LogInformation(
+                "Validation failed | TraceId: {TraceId} | Path: {Path}",
+                traceId,
+                context.Request.Path);
         }
         else
         {
@@ -146,12 +153,6 @@ public class GlobalExceptionHandler : IExceptionHandler
     // HELPERS
     // =========================================
 
-    private static bool IsDevelopment()
-    {
-        return Environment.GetEnvironmentVariable(
-            "ASPNETCORE_ENVIRONMENT")
-            == "Development";
-    }
     private static Dictionary<string, string[]>? GetDuplicateErrors(string message)
     {
         var match = Regex.Match(
@@ -167,11 +168,9 @@ public class GlobalExceptionHandler : IExceptionHandler
         if (constraintName.StartsWith("IX_"))
         {
             var parts = constraintName.Split('_');
-
             if (parts.Length >= 3)
             {
                 var fieldName = string.Join("_", parts.Skip(2));
-
                 return new Dictionary<string, string[]>
                 {
                     [fieldName] = [$"{fieldName} already exists"]

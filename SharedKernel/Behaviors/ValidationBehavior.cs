@@ -51,11 +51,11 @@ where TRequest : class
 }
 public sealed class RequestValidationException : Exception
 {
-    public IDictionary<string, string[]> errors { get; }
+    public IDictionary<string, string[]> Errors { get; }
 
     public RequestValidationException(
         IDictionary<string, string[]> errors)
     {
-        errors = errors;
+        Errors = errors;
     }
 }

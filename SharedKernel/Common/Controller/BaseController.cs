@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -31,6 +32,6 @@ public abstract class BaseController : ControllerBase
     protected async Task<IActionResult> Push<TResponse>(IRequest<TResponse> request)
     {
         var result = await _mediator.Send(request);
-        return Ok(result);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 }

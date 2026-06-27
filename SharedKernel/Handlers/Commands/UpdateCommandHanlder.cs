@@ -22,35 +22,30 @@ public abstract class UpdateCommandHanlder<TDbContext, TEntity, TKey> : BaseComm
     {
     }
 
-    public async Task<ResponseDto<TDto>> Handle<TDto>(UpdateCommand<TDto,TKey> request, CancellationToken cancellationToken) where TDto : class
+    public async Task<ResponseDto<TDto>> Handle<TDto>(UpdateCommand<TDto, TKey> request, CancellationToken cancellationToken) where TDto : class
     {
-        try
-        {
-            DbSet<TEntity> _repo = _context.Set<TEntity>();
-            var entity = await _context.Set<TEntity>().FindAsync(new object[] { request.id }, cancellationToken);
-            if (entity is null)
-                throw new AppException(HttpStatusCode.NotFound, ResponseMessage.NotFound);
 
-            MapToEntity(request.data, entity);
-            await ValidateAsync(request.data, entity, cancellationToken);
-            _repo.Update(entity);
-            if (await _context.SaveChangesAsync(cancellationToken) >= 1)
+        DbSet<TEntity> _repo = _context.Set<TEntity>();
+        var entity = await _context.Set<TEntity>().FindAsync(new object[] { request.id }, cancellationToken);
+        if (entity is null)
+            throw new AppException(HttpStatusCode.NotFound, ResponseMessage.NotFound);
+
+        MapToEntity(request.data, entity);
+        await ValidateAsync(request.data, entity, cancellationToken);
+        _repo.Update(entity);
+        if (await _context.SaveChangesAsync(cancellationToken) >= 1)
+        {
+            return new ResponseDto<TDto>
             {
-                return new ResponseDto<TDto>
-                {
-                    data = _mapper.Map<TEntity, TDto>(entity),
-                    message = ResponseMessage.UpdateSuccess,
-                    success = true,
-                    status_code = (int)HttpStatusCode.OK
-                };
-            }
+                data = _mapper.Map<TEntity, TDto>(entity),
+                message = ResponseMessage.UpdateSuccess,
+                success = true,
+                status_code = (int)HttpStatusCode.OK
+            };
+        }
 
-            throw new AppException(HttpStatusCode.BadRequest, ResponseMessage.UpdateFailed);
-        }
-        catch (Exception)
-        {
-            throw;
-        }
+        throw new AppException(HttpStatusCode.BadRequest, ResponseMessage.UpdateFailed);
+
     }
 
     protected virtual void MapToEntity<TDto>(TDto dto, TEntity entity) where TDto : class

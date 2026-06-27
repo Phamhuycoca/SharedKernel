@@ -17,8 +17,10 @@ public class AppException : Exception
         status_code = _status_code;
         detail = _detail;
     }
-    public AppException(string message, string? _detail = null) : base(message)
+    public AppException(string message, string? _detail = null)
+        : base(message)
     {
+        status_code = HttpStatusCode.BadRequest;
         detail = _detail;
     }
 }

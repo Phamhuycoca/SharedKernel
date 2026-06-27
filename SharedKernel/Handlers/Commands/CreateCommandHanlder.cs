@@ -24,28 +24,23 @@ public abstract class CreateCommandHanlder<TDbContext, TEntity> : BaseCommandHan
 
     public async Task<ResponseDto<TDto>> Handle<TDto>(CreateCommand<TDto> request, CancellationToken cancellationToken) where TDto : class
     {
-        try
-        {
-            TEntity entity = MapToEntity(request.data);
-            await ValidateAsync(request.data, entity, cancellationToken);
-            await _context.Set<TEntity>().AddAsync(entity, cancellationToken);
-            if (await _context.SaveChangesAsync(cancellationToken) >= 1)
-            {
-                return new ResponseDto<TDto>
-                {
-                    data = _mapper.Map<TEntity, TDto>(entity),
-                    message = ResponseMessage.CreateSuccess,
-                    success = true,
-                    status_code= (int)HttpStatusCode.OK
-                };
-            }
 
-            throw new AppException(HttpStatusCode.BadRequest, ResponseMessage.CreateFailed);
-        }
-        catch (Exception)
+        TEntity entity = MapToEntity(request.data);
+        await ValidateAsync(request.data, entity, cancellationToken);
+        await _context.Set<TEntity>().AddAsync(entity, cancellationToken);
+        if (await _context.SaveChangesAsync(cancellationToken) >= 1)
         {
-            throw;
+            return new ResponseDto<TDto>
+            {
+                data = _mapper.Map<TEntity, TDto>(entity),
+                message = ResponseMessage.CreateSuccess,
+                success = true,
+                status_code = (int)HttpStatusCode.OK
+            };
         }
+
+        throw new AppException(HttpStatusCode.BadRequest, ResponseMessage.CreateFailed);
+
     }
 
     protected virtual TEntity MapToEntity<TDto>(TDto dto) where TDto : class

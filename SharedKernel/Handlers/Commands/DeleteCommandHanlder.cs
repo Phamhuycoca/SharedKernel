@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Handlers.Commands;
 
-public abstract class DeleteCommandHanlder<TDbContext, TEntity,TKey> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
+public abstract class DeleteCommandHanlder<TDbContext, TEntity, TKey> : BaseCommandHanlder<TDbContext, TEntity> where TDbContext : DbContext where TEntity : class where TKey : struct
 {
     public DeleteCommandHanlder(TDbContext context, IMapper mapper, IMediator mediator)
         : base(context, mapper, mediator)
@@ -24,26 +24,21 @@ public abstract class DeleteCommandHanlder<TDbContext, TEntity,TKey> : BaseComma
 
     public async Task<ResponseDto<bool>> Handle(DeleteCommand<TKey> request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var entity = await _context.Set<TEntity>()
-             .FindAsync(new object[] { request.id }, cancellationToken);
-            if (entity is null)
-                throw new AppException(HttpStatusCode.NotFound, ResponseMessage.NotFound);
 
-            _context.Set<TEntity>().Remove(entity);
-            _context.SaveChanges();
-            return new ResponseDto<bool>
-            {
-                data = true,
-                message = ResponseMessage.DeleteSuccess,
-                success = true,
-                status_code = (int)HttpStatusCode.OK
-            };
-        }
-        catch (Exception ex)
+        var entity = await _context.Set<TEntity>()
+         .FindAsync(new object[] { request.id }, cancellationToken);
+        if (entity is null)
+            throw new AppException(HttpStatusCode.NotFound, ResponseMessage.NotFound);
+
+        _context.Set<TEntity>().Remove(entity);
+        await _context.SaveChangesAsync(cancellationToken);
+        return new ResponseDto<bool>
         {
-            throw new AppException(HttpStatusCode.BadRequest, ex.Message);
-        }
+            data = true,
+            message = ResponseMessage.DeleteSuccess,
+            success = true,
+            status_code = (int)HttpStatusCode.OK
+        };
+
     }
 }

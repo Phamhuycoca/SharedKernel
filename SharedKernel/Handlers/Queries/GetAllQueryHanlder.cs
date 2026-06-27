@@ -13,6 +13,7 @@ using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SharedKernel.Handlers.Queries;
 
@@ -30,7 +31,7 @@ public abstract class GetAllQueryHanlder<TDbContext, TEntity> : BaseQueryHanlder
         IQueryable<TEntity> query4 = _context.Set<TEntity>().AsQueryable();
         query4 = QueryBuilder(query4, filterObj, request.search, request);
         query4 = SortBuilder(query4, sortObject);
-        int total = query4.Count();
+        int total = await query4.CountAsync(cancellationToken);
         query4 = PagingBuilder(query4, request.page, request.page_size);
         return new ResponseListDto<TDto>(_data: await query4.ProjectTo(_mapper.ConfigurationProvider, Array.Empty<Expression<Func<TDto, object>>>()).ToListAsync(cancellationToken), _meta: new Meta(request.page, request.page_size, total));
     }
