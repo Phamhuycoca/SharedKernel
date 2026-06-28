@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace SharedKernel.Commands;
 
-public record GetByIdQueryCommand<P> where P : struct
+public record GetByIdQueryCommand<TKey> where TKey : struct
 {
     [FromRoute]
-    public P id { get; set; }
+    public TKey id { get; set; }
 }

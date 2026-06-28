@@ -20,6 +20,7 @@ using SharedKernel.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -173,10 +174,11 @@ public static class ConfigureServices
 
                 return new BadRequestObjectResult(new ApiErrorResponse
                 {
-                    status_code = 400,
-                    message = "Validation failed",
+                    status_code = (int)HttpStatusCode.UnprocessableEntity,
+                    message = ResponseMessage.Validator,
                     errors = errors,
-                    trace_id = context.HttpContext.TraceIdentifier
+                    trace_id = context.HttpContext.TraceIdentifier,
+                    instance = context.HttpContext.Request.Path
                 });
             };
         });

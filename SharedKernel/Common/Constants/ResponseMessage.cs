@@ -64,4 +64,5 @@ public static class ResponseMessage
     public const string ServiceUnavailable = "The service is temporarily unavailable.";
     public const string NoContent = "No data available.";
     public const string DuplicateRequest = "Duplicate request detected. Please wait before trying again.";
+    public const string Validator = "Validation failed";
 }

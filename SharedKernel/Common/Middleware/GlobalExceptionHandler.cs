@@ -16,7 +16,7 @@ namespace SharedKernel.Common.Middleware;
 public class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<GlobalExceptionHandler> _logger;
-    private readonly IWebHostEnvironment _env;  // FIX: inject thay vì đọc env var mỗi request
+    private readonly IWebHostEnvironment _env;  
 
     public GlobalExceptionHandler(
         ILogger<GlobalExceptionHandler> logger,
@@ -33,8 +33,8 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         var traceId = httpContext.TraceIdentifier;
 
-        LogException(exception, traceId, httpContext);
 
+        LogException(exception, traceId, httpContext);
         var (statusCode, message, errors) = MapException(exception);
 
         httpContext.Response.StatusCode = (int)statusCode;
@@ -73,7 +73,7 @@ public class GlobalExceptionHandler : IExceptionHandler
 
             RequestValidationException fluentEx => (
                 HttpStatusCode.UnprocessableEntity,
-               "Validation failed",
+               ResponseMessage.Validator,
                 fluentEx.Errors
             ),
 
@@ -121,31 +121,42 @@ public class GlobalExceptionHandler : IExceptionHandler
     // LOG
     // =========================================
 
-    private void LogException(Exception exception, string traceId, HttpContext context)
+    private void LogException(
+     Exception exception,
+     string traceId,
+     HttpContext context)
     {
-        if (exception is AppException appEx)
+        switch (exception)
         {
-            _logger.LogWarning(
-                "Business exception | TraceId: {TraceId} | StatusCode: {StatusCode} | Message: {Message}",
-                traceId,
-                (int)appEx.status_code,
-                appEx.Message);
-        }
-        else if (exception is RequestValidationException)
-        {
-            _logger.LogInformation(
-                "Validation failed | TraceId: {TraceId} | Path: {Path}",
-                traceId,
-                context.Request.Path);
-        }
-        else
-        {
-            _logger.LogError(
-                exception,
-                "Unhandled exception | TraceId: {TraceId} | Method: {Method} | Path: {Path}",
-                traceId,
-                context.Request.Method,
-                context.Request.Path);
+            case AppException appEx:
+                _logger.LogWarning(
+                    exception,
+                    "Business exception | TraceId: {TraceId} | StatusCode: {StatusCode} | Method: {Method} | Path: {Path} | Message: {Message}",
+                    traceId,
+                    (int)appEx.status_code,
+                    context.Request.Method,
+                    context.Request.Path,
+                    appEx.Message);
+                break;
+
+            case RequestValidationException validationEx:
+                _logger.LogWarning(
+                    exception,
+                    "Validation failed | TraceId: {TraceId} | Method: {Method} | Path: {Path} | Message: {Message}",
+                    traceId,
+                    context.Request.Method,
+                    context.Request.Path,
+                    validationEx.Message);
+                break;
+
+            default:
+                _logger.LogError(
+                    exception,
+                    "Unhandled exception | TraceId: {TraceId} | Method: {Method} | Path: {Path}",
+                    traceId,
+                    context.Request.Method,
+                    context.Request.Path);
+                break;
         }
     }
 

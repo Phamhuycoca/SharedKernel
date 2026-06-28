@@ -49,6 +49,16 @@ where TRequest : class
         return await next().ConfigureAwait(false);
     }
 }
+//public sealed class RequestValidationException : Exception
+//{
+//    public IDictionary<string, string[]> Errors { get; }
+
+//    public RequestValidationException(
+//        IDictionary<string, string[]> errors)
+//    {
+//        Errors = errors;
+//    }
+//}
 public sealed class RequestValidationException : Exception
 {
     public IDictionary<string, string[]> Errors { get; }
@@ -57,5 +67,45 @@ public sealed class RequestValidationException : Exception
         IDictionary<string, string[]> errors)
     {
         Errors = errors;
+    }
+
+    /// <summary>
+    /// Throw lỗi validate cho 1 field duy nhất.
+    /// Ví dụ: RequestValidationException.Throw("user_id", "user_id is required");
+    /// </summary>
+    public static void Throw(string field, string message)
+    {
+        throw new RequestValidationException(
+            new Dictionary<string, string[]>
+            {
+                [field] = new[] { message }
+            });
+    }
+
+    /// <summary>
+    /// Throw lỗi validate cho 1 field với nhiều message.
+    /// Ví dụ: RequestValidationException.Throw("email", new[] { "email is required", "email is invalid" });
+    /// </summary>
+    public static void Throw(string field, string[] messages)
+    {
+        throw new RequestValidationException(
+            new Dictionary<string, string[]>
+            {
+                [field] = messages
+            });
+    }
+
+    /// <summary>
+    /// Throw lỗi validate cho nhiều field cùng lúc.
+    /// Ví dụ:
+    /// RequestValidationException.Throw(new Dictionary&lt;string, string[]&gt;
+    /// {
+    ///     ["user_id"] = new[] { "user_id is required" },
+    ///     ["role_id"] = new[] { "role_id is required" }
+    /// });
+    /// </summary>
+    public static void Throw(IDictionary<string, string[]> errors)
+    {
+        throw new RequestValidationException(errors);
     }
 }
