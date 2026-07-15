@@ -46,10 +46,6 @@ public static class LoggingConfig
                 retainedFileCountLimit: 30,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}");
 
-            // Seq — chỉ bật nếu có config, chỉ gửi lỗi
-            var seqUrl = ctx.Configuration["Seq:ServerUrl"];
-            if (!string.IsNullOrWhiteSpace(seqUrl))
-                cfg.WriteTo.Seq(seqUrl, restrictedToMinimumLevel: LogEventLevel.Error);
         });
     }
 

@@ -7,7 +7,7 @@
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 	  
 	<PackageId>SharedKernel.Common</PackageId>
-	<Version>1.0.1</Version>
+	<Version>1.0.2</Version>
 	<Authors>PhamHuy</Authors>
 	<Company>Huypk</Company>
 	<Description>Shared Api CQRS Library</Description>
